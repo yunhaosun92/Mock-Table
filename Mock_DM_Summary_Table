@@ -1,0 +1,194 @@
+**Import the data set.;
+%macro impdm(datafile=);
+proc import
+datafile="&datafile"
+dbms=xlsx
+out=work.ADSL
+replace;
+%mend impdm;
+%impdm(datafile=/folders/myfolders/DM_Exercise1.xlsx);
+**AGE GROUP STATISTICS PROGTAMMING**;
+proc freq data=adsl noprint;
+where trt01pn ne .;
+table trt01pn * agegr1/missing outpct out=agegr1n;
+run;
+data agegr1n;
+set agegr1n;
+where agegr1 ne "";
+length value $25;
+value = put(count, 4.) || '(' || put(pct_row, 5.1) || '%)';
+run;
+proc sort data=agegr1n;
+by agegr1;
+run;
+proc transpose data=agegr1n out=agegr1n(drop=_name_) prefix=col;
+by agegr1;
+var value;
+id trt01pn;
+run;
+**SEX STATISTICS PROGTAMMING**;
+**GET SIMPLE FREQUENCY COUNTS FOR SEX.**;
+proc freq data = adsl noprint;
+where trt01pn ne .;
+table trt01pn * sex / missing outpct out =sexn;
+run;
+** format sex N(%) as desired;
+data sexn;
+set sexn;
+where sex ne "";
+length value $25;
+value = put(count, 4.) || '(' || put(pct_row, 5.1) || '%)';
+run;
+proc sort data=sexn;
+by sex;
+run;
+proc transpose data=sexn out=sexn(drop=_name_) prefix=col;
+by sex;
+var value;
+id trt01pn;
+run;
+**RACE STATISTICS PROGTAMMING**;
+proc freq data=adsl noprint;
+where trt01pn ne .;
+table trt01pn * race/missing outpct out=racen;
+run;
+data racen;
+set racen;
+where racen ne "";
+length value $25;
+value = put(count, 4.) || '(' || put(pct_row, 5.1) || '%)';
+run;
+proc sort data=racen;
+by race;
+run;
+proc transpose data=racen out=racen(drop=_name_) prefix=col;
+by race;
+var value;
+id trt01pn;
+run;
+**ETHNICITY STATISTICS PROGTAMMING**;
+proc freq data=adsl noprint;
+where trt01pn ne .;
+table trt01pn * ethnic/missing outpct out=ethnicn;
+run;
+data ethnicn;
+set ethnicn;
+where ethnic ne "";
+length value $25;
+value = put(count, 4.) || '(' || put(pct_row, 5.1) || '%)';
+run;
+proc sort data=ethnicn;
+by ethnic;
+run;
+proc transpose data=ethnicn out=ethnicn(drop=_name_) prefix=col;
+by ethnic;
+var value;
+id trt01pn;
+run;
+** Get aga descriptive statistics.;
+proc sort
+   data=adsl;
+      by trt01pn;
+run;
+proc univariate data= adsl noprint;
+by trt01pn;
+var age;
+output out=age n=_n mean=_mean std=_std min=_min max=_max;
+run;
+** FORMAT AGE DESCRIPTIVE STATISTICS FOR THE TABLE.;
+data age;
+set age;
+   format n mean std min max minmax $14.;
+   drop _n _mean _std _min _max ;
+   n = put(_n,7.);
+   mean = put(_mean,7.);
+   std = put(_std,7.1);
+   min = put(_min,7.);
+   max = put(_max,7.);
+   minmax =cats(min,',',max);
+run;
+**transpose age descriptive statistics into colums;
+proc transpose data=age out=age prefix=col;
+var n mean minmax std;
+id trt01pn;
+run;
+** Get platelet count descriptive statistics.;
+proc sort
+   data=adsl;
+      by trt01pn;
+run;
+proc univariate data= adsl noprint;
+by trt01pn;
+var pltcnt;
+output out=pltcnt n=_n mean=_mean std=_std min=_min max=_max;
+run;
+data pltcnt;
+set pltcnt;
+   format n mean std min max minmax $14.;
+   drop _n _mean _std _min _max ;
+   n = put(_n,7.);
+   mean = put(_mean,7.);
+   std = put(_std,7.1);
+   min = put(_min,7.);
+   max = put(_max,7.);
+   minmax =cats(min,',',max);
+run;
+proc transpose data=pltcnt out=pltcnt prefix=col;
+var n mean minmax std;
+id trt01pn;
+run;
+
+**** CONCATENATE AGE, SEX, AND RACE STATISTICS AND CREATE GROUPING
+**** GROUP VARIABLE FOR LINE SKIPPING IN PROC REPORT.;
+data DMreport;
+   set agegr1n(in = in1)
+       sexn(in = in2)
+       racen(in = in3)
+       ethnicn(in= in4)
+       age(in=in5)
+       pltcnt(in=in6);
+       group = sum(in1 * 1, in2 * 2, in3 * 3, in4 * 4, in5 * 5, in6 * 6);
+run;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+proc format;
+value $SEX
+'M'="MALE"
+'F'="FEMALE"
+'' ="NOT REPORTED";
+run;
